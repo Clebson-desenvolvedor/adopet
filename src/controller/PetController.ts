@@ -1,13 +1,65 @@
 import { Request, Response } from "express";
-import type TipoPet from "./tipos/TipoPet";
+import type TipoPet from "../tipos/TipoPet";
+import EnumEspecie from "../enum/EnumEspecie";
+let listaDePets: Array<TipoPet> = [];
 
-let lista_de_pets: TipoPet[] = [];
+let id = 0;
+function geraId() {
+  id = id + 1;
+  return id;
+}
 
 export default class PetController {
-    criaPet(req: Request, res: Response) {
-        const { id, adotado, especie, idade, nome } = req.body as TipoPet;
-        const novo_pet: TipoPet = { id, adotado, especie, idade, nome }
-        lista_de_pets.push(novo_pet);
-        return res.status(201).json(novo_pet);
-    }
+	criaPet(req: Request, res: Response) {
+    	const { adotado, especie, dataDeNascimento, nome } = req.body as TipoPet;
+
+		if (!Object.values(EnumEspecie).includes(especie)) {
+			return res.status(400).json({ error: "Espécie inválida" });
+		}
+
+		const novoPet: TipoPet = {
+			id: geraId(),
+			adotado,
+			especie,
+			dataDeNascimento,
+			nome,
+		};
+
+		listaDePets.push(novoPet);
+		return res.status(201).json(novoPet);
+	}
+
+  	listaPet(req: Request, res: Response) {
+    	return res.status(200).json(listaDePets);
+  	}
+
+	atualizaPet(req: Request, res: Response) {
+		const { id } = req.params;
+		const { nome, dataDeNascimento, especie, adotado } = req.body as TipoPet;
+		const pet = listaDePets.find((pet) => pet.id === Number(id));
+
+		if (!pet) {
+			return res.status(400).json({ mensagem: "Pet não encontrado" });
+		}
+
+		pet.nome = nome;
+		pet.dataDeNascimento = dataDeNascimento;
+		pet.especie = especie;
+		pet.adotado = adotado;
+
+		return res.status(200).json(pet);
+	}
+
+	deletaPet(req: Request, res: Response) {
+		const { id } = req.params;
+		const pet = listaDePets.find((pet) => pet.id === Number(id));
+
+		if (!pet) {
+			return res.status(400).json({ mensagem: "Pet não encontrado" });
+		}
+
+		const indice = listaDePets.indexOf(pet);
+		listaDePets.splice(indice, 1);
+		return res.status(204).json();
+	}
 }
